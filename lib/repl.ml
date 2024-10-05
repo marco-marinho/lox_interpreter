@@ -10,7 +10,9 @@ let read_file file =
   in
   aux ""
 
-let run contents = print_endline contents
+let run contents =
+  let tokens = Scanner.scanner contents in
+  List.iter (fun x -> Printf.printf "%s, " (Token.string_of_token x)) tokens; Printf.printf "\n"
 
 let run_file file =
   let file_contents = read_file file in

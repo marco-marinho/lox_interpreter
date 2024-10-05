@@ -26,6 +26,7 @@ type tokentype =
   | Else
   | False
   | Fun
+  | For
   | If
   | Nil
   | Or
@@ -38,29 +39,29 @@ type tokentype =
   | While
   | EOF
 
-type literal = String of string | Number of float | Null
+type literal = StringLiteral of string | NumberLiteral of float | Null
 type token = {token: tokentype; lexeme: string; literal: literal; line: int}
 
 let string_of_tokentype = function
-  | LeftParen -> "("
-  | RightParen -> ")"
-  | LeftBrace -> "{"
-  | RightBrace -> "}"
-  | Comma -> ","
-  | Dot -> "."
-  | Minus -> "-"
-  | Plus -> "+"
-  | Semicolon -> ";"
-  | Slash -> "/"
-  | Star -> "*"
-  | Bang -> "!"
-  | BangEqual -> "!="
-  | Equal -> "="
-  | EqualEqual -> "=="
-  | Greater -> ">"
-  | GreaterEqual -> ">="
-  | Less -> "<"
-  | LessEqual -> "<="
+  | LeftParen -> "LeftParenthesis"
+  | RightParen -> "RightParenthesis"
+  | LeftBrace -> "LeftBrace"
+  | RightBrace -> "RightBrace"
+  | Comma -> "Comma"
+  | Dot -> "Dot"
+  | Minus -> "Minus"
+  | Plus -> "Plus"
+  | Semicolon -> "Semiconlon"
+  | Slash -> "Slash"
+  | Star -> "Star"
+  | Bang -> "Bang"
+  | BangEqual -> "BandEqual"
+  | Equal -> "Equal"
+  | EqualEqual -> "EqualEqual"
+  | Greater -> "Greater"
+  | GreaterEqual -> "GreaterEqual"
+  | Less -> "Less"
+  | LessEqual -> "LessEqual"
   | Indentifier -> "Indentifier"
   | String -> "String"
   | Number -> "Number"
@@ -69,6 +70,7 @@ let string_of_tokentype = function
   | Else -> "else"
   | False -> "false"
   | Fun -> "fun"
+  | For -> "for"
   | If -> "if"
   | Nil -> "nil"
   | Or -> "or"
@@ -81,11 +83,11 @@ let string_of_tokentype = function
   | While -> "while"
   | EOF -> "EOF"
 
-let string_of_literal = function String s -> s | Number n -> string_of_float n | Null -> "null"
+let string_of_literal = function StringLiteral s -> s | NumberLiteral n -> string_of_float n | Null -> "null"
 
 let string_of_token = function
   | {token; lexeme; literal; _} ->
-  Printf.sprintf "%s %s %s"
+  Printf.sprintf "{Token: %s, Lexeme: %s, Literal: %s}"
     (string_of_tokentype token)
     lexeme
     (string_of_literal literal)
