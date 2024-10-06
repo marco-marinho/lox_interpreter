@@ -39,7 +39,7 @@ type tokentype =
   | While
   | EOF
 
-type literal = StringLiteral of string | NumberLiteral of float | Null
+type literal = StringLiteral of string | NumberLiteral of float | Null | BoolLiteral of bool
 type token = {token: tokentype; lexeme: string; literal: literal; line: int}
 
 let string_of_tokentype = function
@@ -83,7 +83,7 @@ let string_of_tokentype = function
   | While -> "while"
   | EOF -> "EOF"
 
-let string_of_literal = function StringLiteral s -> s | NumberLiteral n -> string_of_float n | Null -> "null"
+let string_of_literal = function StringLiteral s -> s | NumberLiteral n -> string_of_float n | Null -> "null" | BoolLiteral b -> string_of_bool b
 
 let string_of_token = function
   | {token; lexeme; literal; _} ->
@@ -93,3 +93,7 @@ let string_of_token = function
     (string_of_literal literal)
 
 let make_token token lexeme literal line = {token; lexeme; literal; line}
+
+let token_type {token; _} = token
+
+let token_literal {literal; _} = literal
