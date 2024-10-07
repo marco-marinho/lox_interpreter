@@ -12,7 +12,8 @@ let read_file file =
 
 let run contents =
   let tokens = Scanner.scanner contents in
-  List.iter (fun x -> Printf.printf "%s, " (Token.string_of_token x)) tokens; Printf.printf "\n"
+  let expressions = Parser.parse tokens in
+  List.iter (fun expr -> print_endline (Expression.string_of_expression expr)) expressions
 
 let run_file file =
   let file_contents = read_file file in

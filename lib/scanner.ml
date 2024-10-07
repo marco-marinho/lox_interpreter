@@ -67,7 +67,7 @@ in
 
 let scanner input =
   let rec aux acc idx line input =
-    if idx = String.length input then List.rev acc
+    if idx = String.length input then acc
     else
       match input.[idx] with
       | '(' ->
@@ -151,7 +151,7 @@ let scanner input =
       | '/' ->
           if input.[idx + 1] = '/' then
             let rec skip_comment idx =
-              if idx = String.length input then List.rev acc
+              if idx = String.length input then acc
               else if input.[idx] = '\n' then aux acc (idx + 1) (line + 1) input
               else skip_comment (idx + 1)
             in
@@ -164,15 +164,15 @@ let scanner input =
           let result = scan_string input "" (idx + 1) line in
           match result with
           | Some (token, idx, line) -> aux (token :: acc) idx line input
-          | None -> List.rev acc)
+          | None -> acc)
       | n when is_digit n -> let results = scan_number input "" idx line in 
         (match results with
         | Some (number, idx) -> aux (Token.make_token Token.Number "number" (Token.NumberLiteral number) line :: acc) idx line input
-        | None -> List.rev acc)
+        | None -> acc)
       | n when is_alpha n -> let (token, identifier, idx) = scan_identifier input "" idx line in
         aux (Token.make_token token identifier Token.Null line :: acc) idx line input
       | _ ->
           Error.error line "unexpected character";
-          List.rev acc
+          acc
   in
-  aux [] 0 1 input
+  List.rev ((Token.make_token Token.EOF "EOF" Token.Null (-1)) :: (aux [] 0 1 input))

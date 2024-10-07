@@ -1,5 +1,3 @@
-type state_type = Token.token list * Token.token list
-
 let check token_type state =
   match state with
   | _, [] -> false
@@ -54,7 +52,7 @@ let rec primary state =
             let flag, state = match_token [ RightParen ] state in
             if flag then (Expression.GroupingExpr expr, state)
             else failwith "Expect ')' after expression"
-          else failwith "Expect primary"
+          else let _, t = state in List.iter (fun x -> print_string (Token.string_of_token x)) t; failwith "Expect primary"
 
 and unary state =
   match match_token [ Bang; Minus ] state with
@@ -117,3 +115,14 @@ and equality state =
   local_match expr state
 
 and expression state = equality state
+
+
+let parse tokens =
+  let rec aux acc state = 
+    if is_at_end state then List.rev acc
+    else
+      let expr, state = expression state in
+      aux (expr :: acc) state
+    in
+  let state = ([], tokens) in
+  aux [] state
