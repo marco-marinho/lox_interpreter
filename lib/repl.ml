@@ -13,7 +13,8 @@ let read_file file =
 let run contents =
   let tokens = Scanner.scanner contents in
   let expressions = Parser.parse tokens in
-  List.iter (fun expr -> print_endline (Expression.string_of_expression expr)) expressions
+  List.iter (fun expr -> print_endline (Expression.string_of_expression expr)) expressions;
+  List.iter (fun literal -> print_string (Token.string_of_literal literal)) (List.map Evaluator.evaluate expressions)
 
 let run_file file =
   let file_contents = read_file file in

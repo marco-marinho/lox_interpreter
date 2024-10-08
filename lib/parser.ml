@@ -21,6 +21,9 @@ let advance state =
     | _ -> failwith "No more tokens to advance"
   else (previous state, state)
 
+let consume token_type state message =
+  if check token_type state then advance state else failwith message
+
 let match_token alternatives state =
   let rec aux state = function
     | [] -> (false, state)
@@ -31,6 +34,26 @@ let match_token alternatives state =
         else aux state t
   in
   aux state alternatives
+
+let synchronize state =
+  let rec aux state =
+    match state with
+    | _, [] -> state
+    | _, _ :: _ ->
+        if Token.token_type (previous state) = Semicolon then state
+        else if
+          List.fold_left
+            (fun acc x ->
+              let y = Token.token_type (peek state) in
+              y = x || acc)
+            true
+            [ Class; Fun; Var; For; If; While; Print; Return ]
+        then
+          let _, state = advance state in
+          aux state
+        else state
+  in
+  aux state
 
 let rec primary state =
   let flag, state = match_token [ False ] state in
@@ -49,17 +72,21 @@ let rec primary state =
           let flag, state = match_token [ LeftParen ] state in
           if flag then
             let expr, state = expression state in
-            let flag, state = match_token [ RightParen ] state in
-            if flag then (Expression.GroupingExpr expr, state)
-            else failwith "Expect ')' after expression"
-          else let _, t = state in List.iter (fun x -> print_string (Token.string_of_token x)) t; failwith "Expect primary"
+            let _, state =
+              consume RightParen state "Expected ')' after expression"
+            in
+            (expr, state)
+          else
+            (* let _, t = state in
+            List.iter (fun x -> print_string (Token.string_of_token x)) t; *)
+            failwith "Expected expression"
 
 and unary state =
   match match_token [ Bang; Minus ] state with
   | true, state ->
       let operator = previous state in
       let right, state = unary state in
-      Expression.UnaryExpr (operator, right), state
+      (Expression.UnaryExpr (operator, right), state)
   | false, state -> primary state
 
 and factor state =
@@ -116,13 +143,14 @@ and equality state =
 
 and expression state = equality state
 
-
 let parse tokens =
-  let rec aux acc state = 
+  let rec aux acc state =
     if is_at_end state then List.rev acc
     else
       let expr, state = expression state in
       aux (expr :: acc) state
-    in
+  in
   let state = ([], tokens) in
+  try
   aux [] state
+  with Failure s -> print_string s; []
