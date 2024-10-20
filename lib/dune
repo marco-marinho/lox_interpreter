@@ -1,3 +1,0 @@
-(library
- (name lox)
- (modules Repl Error Token Scanner Core Expression Parser Evaluator))

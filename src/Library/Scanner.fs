@@ -1,7 +1,5 @@
 module Lox.Scanner
 
-open Lox
-
 let is_digit c = c >= '0' && c <= '9'
 
 let is_alpha c =
