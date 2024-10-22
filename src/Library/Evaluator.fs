@@ -15,20 +15,20 @@ let bang_operator =
     function
     | b -> Token.BoolLiteral(is_truthy b)
 
-let rec evaluate =
+let rec evaluate_expression =
     function
     | Expression.LiteralExpr literal -> literal
-    | Expression.GroupingExpr expr -> evaluate expr
+    | Expression.GroupingExpr expr -> evaluate_expression expr
     | Expression.UnaryExpr(operator, right) ->
-        let right = evaluate right in
+        let right = evaluate_expression right in
 
         match operator.token with
         | Token.Minus -> minus_operator right
         | Token.Bang -> bang_operator right
         | _ -> failwith "Not implemented"
     | Expression.BinaryExpr(left, operator, right) ->
-        (let left = evaluate left in
-         let right = evaluate right in
+        (let left = evaluate_expression left in
+         let right = evaluate_expression right in
 
          match (left, right) with
          | Token.NumberLiteral left, Token.NumberLiteral right ->
@@ -69,3 +69,9 @@ let rec evaluate =
              | Token.BangEqual -> Token.BoolLiteral true
              | _ -> failwith "Invalid operator"
          | _ -> failwith "Not implemented")
+
+
+let evaluate_stament =
+    function
+    | Statement.Statement expr -> evaluate_expression expr |> ignore
+    | Statement.PrintStatement expr -> printfn "%s" (Token.string_of_literal (evaluate_expression expr))

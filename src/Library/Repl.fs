@@ -6,9 +6,10 @@ let read_file file = List.ofSeq (File.ReadLines(file))
 
 let run contents =
     let tokens = Scanner.scann contents
-    let expressions = Parser.parse tokens
-    List.iter (fun token -> printfn "%s" (Token.string_of_token token)) tokens
-    List.iter (fun literal -> printfn "%s" (Token.string_of_literal literal)) (List.map Evaluator.evaluate expressions)
+    let statements = Parser.parse tokens
+    // List.iter (fun token -> printfn "%s" (Token.string_of_token token)) tokens
+    // List.iter (fun stmt -> printfn "%s" (Statement.string_of_statement stmt)) statements
+    List.iter Evaluator.evaluate_stament statements
 
 let run_file file =
     let file_contents = read_file file in List.iter run file_contents
@@ -16,7 +17,7 @@ let run_file file =
 let rec run_prompt () =
     let try_read () =
         match System.Console.ReadLine() with
-        | "exit()" -> None
+        | "exit" -> None
         | other -> Some(other)
 
     match try_read () with

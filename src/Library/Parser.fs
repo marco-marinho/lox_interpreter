@@ -30,7 +30,8 @@ let advance state =
 
 let consume token_type state message =
     if check token_type state then
-        advance state
+        let _, state = advance state
+        state
     else
         failwith message
 
@@ -97,7 +98,7 @@ let rec primary state =
 
                     if flag then
                         let expr, state = expression state in
-                        let _, state = consume Token.RightParen state "Expected ')' after expression" in
+                        let state = consume Token.RightParen state "Expected ')' after expression" in
                         (expr, state)
                     else
                         (* let _, t = state in
@@ -155,29 +156,50 @@ and comparison state =
     local_match expr state
 
 and equality state =
-    let expr, state = comparison state in
+    let expr, state = comparison state
 
     let rec local_match prev_expr state =
         match match_token [ Token.BangEqual; Token.EqualEqual ] state with
         | true, state ->
-            let operator = previous state in
-            let right, state = comparison state in
-            let expr = Expression.BinaryExpr(prev_expr, operator, right) in
+            let operator = previous state
+            let right, state = comparison state
+            let expr = Expression.BinaryExpr(prev_expr, operator, right)
             local_match expr state
-        | false, state -> (prev_expr, state) in
+        | false, state -> (prev_expr, state)
 
     local_match expr state
 
 and expression state = equality state
+
+let print_statement state =
+    let value, state = expression state
+    let state = consume Token.Semicolon state "Expected ; after value"
+    Statement.PrintStatement(value), state
+
+let expression_statement state =
+    let value, state = expression state
+    let state = consume Token.Semicolon state "Expected ; after value"
+    Statement.Statement(value), state
+
+
+
+let statement state =
+    let is_print, state = match_token [ Token.Print ] state
+
+    if is_print then
+        print_statement state
+    else
+        expression_statement state
+
 
 let parse tokens =
     let rec aux acc state =
         if is_at_end state then
             List.rev acc
         else
-            let expr, state = expression state in aux (expr :: acc) state in
+            let stmt, state = statement state in aux (stmt :: acc) state
 
-    let state = ([], tokens) in
+    let state = ([], tokens)
 
     try
         aux [] state
