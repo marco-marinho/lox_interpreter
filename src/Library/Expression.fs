@@ -5,16 +5,13 @@ type expression =
     | GroupingExpr of expression
     | LiteralExpr of Token.literal
     | UnaryExpr of Token.token * expression
+    | VariableExpr of Token.token
 
-let rec string_of_expression =
-    function
-    | BinaryExpr(left, operator, right) ->
-        Printf.sprintf
-            "Binary(%s, %s, %s)"
-            (string_of_expression left)
-            (Token.string_of_token operator)
-            (string_of_expression right)
-    | GroupingExpr expr -> Printf.sprintf "Grouping(%s)" (string_of_expression expr)
-    | LiteralExpr literal -> Printf.sprintf "Literal(%s)" (Token.string_of_literal literal)
-    | UnaryExpr(operator, right) ->
-        Printf.sprintf "Unary(%s, %s)" (Token.string_of_token operator) (string_of_expression right)
+    override this.ToString() =
+        match this with
+        | BinaryExpr(left, operator, right) ->
+            Printf.sprintf "Binary(%s, %s, %s)" (string left) (string operator) (string right)
+        | GroupingExpr expr -> Printf.sprintf "Grouping(%s)" (string expr)
+        | LiteralExpr literal -> Printf.sprintf "Literal(%s)" (string literal)
+        | UnaryExpr(operator, right) -> Printf.sprintf "Unary(%s, %s)" (string operator) (string right)
+        | VariableExpr token -> Printf.sprintf "Variable(%s)" (string token)

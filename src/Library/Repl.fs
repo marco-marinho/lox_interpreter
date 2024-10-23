@@ -7,9 +7,9 @@ let read_file file = List.ofSeq (File.ReadLines(file))
 let run contents =
     let tokens = Scanner.scann contents
     let statements = Parser.parse tokens
-    // List.iter (fun token -> printfn "%s" (Token.string_of_token token)) tokens
-    // List.iter (fun stmt -> printfn "%s" (Statement.string_of_statement stmt)) statements
-    List.iter Evaluator.evaluate_stament statements
+    // List.iter (fun token -> printfn "%s" (string token)) tokens
+    List.iter (fun stmt -> printfn "%s" (string stmt)) statements
+//List.iter Evaluator.evaluate_stament statements
 
 let run_file file =
     let file_contents = read_file file in List.iter run file_contents

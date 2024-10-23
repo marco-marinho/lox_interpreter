@@ -30,8 +30,8 @@ let advance state =
 
 let consume token_type state message =
     if check token_type state then
-        let _, state = advance state
-        state
+        let token, state = advance state
+        token, state
     else
         failwith message
 
@@ -94,16 +94,19 @@ let rec primary state =
                 if flag then
                     (Expression.LiteralExpr(Token.token_literal (previous state)), state)
                 else
-                    let flag, state = match_token [ Token.LeftParen ] state in
+                    let flag, state = match_token [ Token.Indentifier ] state in
 
                     if flag then
-                        let expr, state = expression state in
-                        let state = consume Token.RightParen state "Expected ')' after expression" in
-                        (expr, state)
+                        (Expression.VariableExpr(previous state), state)
                     else
-                        (* let _, t = state in
-            List.iter (fun x -> print_string (Token.string_of_token x)) t; *)
-                        failwith "Expected expression"
+                        let flag, state = match_token [ Token.LeftParen ] state in
+
+                        if flag then
+                            let expr, state = expression state in
+                            let _, state = consume Token.RightParen state "Expected ')' after expression" in
+                            (expr, state)
+                        else
+                            failwith "Expected expression"
 
 and unary state =
     match match_token [ Token.Bang; Token.Minus ] state with
@@ -173,12 +176,12 @@ and expression state = equality state
 
 let print_statement state =
     let value, state = expression state
-    let state = consume Token.Semicolon state "Expected ; after value"
+    let _, state = consume Token.Semicolon state "Expected ; after value"
     Statement.PrintStatement(value), state
 
 let expression_statement state =
     let value, state = expression state
-    let state = consume Token.Semicolon state "Expected ; after value"
+    let _, state = consume Token.Semicolon state "Expected ; after value"
     Statement.Statement(value), state
 
 
@@ -191,13 +194,34 @@ let statement state =
     else
         expression_statement state
 
+let var_declaration state =
+    let token, state = consume Token.Indentifier state "Expected identifier after var"
+    let has_value, state = match_token [ Token.Equal ] state
+
+    let value, state =
+        if has_value then
+            expression state
+        else
+            Expression.LiteralExpr(Token.Null), state
+
+
+    let _, state = consume Token.Semicolon state "Expected ; after var declaration"
+    Statement.VarStatement(token, value), state
+
+let declaration state =
+    let is_var, state = match_token [ Token.Var ] state
+
+    if is_var then var_declaration state else statement state
+
+
 
 let parse tokens =
     let rec aux acc state =
+
         if is_at_end state then
             List.rev acc
         else
-            let stmt, state = statement state in aux (stmt :: acc) state
+            let stmt, state = declaration state in aux (stmt :: acc) state
 
     let state = ([], tokens)
 
