@@ -12,6 +12,7 @@
     <Compile Include="Expression.fs" />
     <Compile Include="Statement.fs" />
     <Compile Include="Parser.fs" />
+    <Compile Include="Environment.fs" />
     <Compile Include="Evaluator.fs" />
     <Compile Include="Repl.fs" />
   </ItemGroup>
