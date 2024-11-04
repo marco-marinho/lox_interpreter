@@ -172,7 +172,20 @@ and equality state =
 
     local_match expr state
 
-and expression state = equality state
+and assignment state =
+    let expr, state = equality state
+
+    match match_token [ Token.Equal ] state with
+    | true, state ->
+        let equals = previous state
+        let value, state = assignment state
+
+        match expr with
+        | Expression.VariableExpr(token) -> (Expression.AsignExpr(token, value), state)
+        | _ -> failwith "Invalid assignment target"
+    | false, state -> (expr, state)
+
+and expression state = assignment state
 
 let print_statement state =
     let value, state = expression state

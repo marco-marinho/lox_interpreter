@@ -6,6 +6,7 @@ type expression =
     | LiteralExpr of Token.literal
     | UnaryExpr of Token.token * expression
     | VariableExpr of Token.token
+    | AsignExpr of Token.token * expression
 
     override this.ToString() =
         match this with
@@ -15,3 +16,4 @@ type expression =
         | LiteralExpr literal -> Printf.sprintf "Literal(%s)" (string literal)
         | UnaryExpr(operator, right) -> Printf.sprintf "Unary(%s, %s)" (string operator) (string right)
         | VariableExpr token -> Printf.sprintf "Variable(%s)" (string token)
+        | AsignExpr(token, expr) -> Printf.sprintf "Asignement(%s, %s)" (string token) (string expr)
