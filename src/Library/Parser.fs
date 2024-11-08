@@ -177,7 +177,6 @@ and assignment state =
 
     match match_token [ Token.Equal ] state with
     | true, state ->
-        let equals = previous state
         let value, state = assignment state
 
         match expr with
@@ -197,17 +196,34 @@ let expression_statement state =
     let _, state = consume Token.Semicolon state "Expected ; after value"
     Statement.Statement(value), state
 
+let rec block_statement state =
+    let rec aux state acc =
+        let a, b = state
+
+        if is_at_end state || check Token.RightBrace state then
+            let _, state = consume Token.RightBrace state "Expected '}' after block"
+            (Statement.BlockStatement(List.rev acc), state)
+        else
+            let stmt, state = declaration state
+            aux state (stmt :: acc)
+
+    aux state []
 
 
-let statement state =
+and statement state =
     let is_print, state = match_token [ Token.Print ] state
 
     if is_print then
         print_statement state
     else
-        expression_statement state
+        let is_block, state = match_token [ Token.LeftBrace ] state
 
-let var_declaration state =
+        if is_block then
+            block_statement state
+        else
+            expression_statement state
+
+and var_declaration state =
     let token, state = consume Token.Indentifier state "Expected identifier after var"
     let has_value, state = match_token [ Token.Equal ] state
 
@@ -221,7 +237,7 @@ let var_declaration state =
     let _, state = consume Token.Semicolon state "Expected ; after var declaration"
     Statement.VarStatement(token, value), state
 
-let declaration state =
+and declaration state =
     let is_var, state = match_token [ Token.Var ] state
 
     if is_var then var_declaration state else statement state

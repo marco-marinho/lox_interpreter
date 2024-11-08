@@ -81,12 +81,19 @@ let evaluate_var_stmt name expr environment =
     Environment.define environment name value
 
 
-let evaluate_stament statement environment =
+let rec evaluate_stament statement environment =
     match statement with
     | Statement.Statement expr ->
-        evaluate_expression expr |> ignore
+        let _, environment = evaluate_expression expr environment
         environment
     | Statement.PrintStatement expr ->
         printfn "%s" (string (evaluate_expression expr environment))
         environment
     | Statement.VarStatement(name, expr) -> evaluate_var_stmt name.lexeme expr environment
+    | Statement.BlockStatement statements ->
+        let temp_env =
+            List.fold (fun env stmt -> evaluate_stament stmt env) (Map.empty :: environment) statements
+
+        match temp_env with
+        | _ :: tail -> tail
+        | [] -> failwith "Empty environment"

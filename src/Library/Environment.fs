@@ -1,13 +1,25 @@
 module Lox.Environment
 
-let define env key value = Map.add key value env
+let define env key value =
+    match env with
+    | h :: t -> Map.add key value h :: t
+    | [] -> failwith "No environment to define variable"
 
-let assign env key value =
-    match Map.tryFind key env with
-    | Some _ -> Map.add key value env
-    | None -> failwith (sprintf "Undefined variable '%s'" key)
+let rec assign env key value =
+    let rec aux env acc =
+        match env with
+        | [] -> failwith (sprintf "Undefined variable '%s'" key)
+        | h :: t ->
+            match Map.tryFind key h with
+            | Some _ -> List.rev acc @ (Map.add key value h :: t)
+            | None -> aux t (h :: acc)
 
-let get env key =
-    match Map.tryFind key env with
-    | Some value -> value
-    | None -> failwith (sprintf "Undefined variable '%s'" key)
+    aux env []
+
+let rec get env key =
+    match env with
+    | [] -> failwith (sprintf "Undefined variable '%s'" key)
+    | h :: t ->
+        match Map.tryFind key h with
+        | Some value -> value
+        | None -> get t key
