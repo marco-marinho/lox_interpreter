@@ -7,6 +7,7 @@ type expression =
     | UnaryExpr of Token.token * expression
     | VariableExpr of Token.token
     | AsignExpr of Token.token * expression
+    | LogicalExpr of expression * Token.token * expression
 
     override this.ToString() =
         match this with
@@ -17,3 +18,5 @@ type expression =
         | UnaryExpr(operator, right) -> Printf.sprintf "Unary(%s, %s)" (string operator) (string right)
         | VariableExpr token -> Printf.sprintf "Variable(%s)" (string token)
         | AsignExpr(token, expr) -> Printf.sprintf "Asignement(%s, %s)" (string token) (string expr)
+        | LogicalExpr(left, operator, right) ->
+            Printf.sprintf "Logical(%s, %s, %s)" (string left) (string operator) (string right)

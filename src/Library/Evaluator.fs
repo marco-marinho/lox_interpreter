@@ -17,6 +17,15 @@ let bang_operator =
 
 let rec evaluate_expression expr environment =
     match expr with
+    | Expression.LogicalExpr(left, operator, right) ->
+        let left, environment = evaluate_expression left environment
+
+        if operator.token = Token.Or && is_truthy left then
+            (left, environment)
+        else if operator.token = Token.And && not (is_truthy left) then
+            (left, environment)
+        else
+            evaluate_expression right environment
     | Expression.AsignExpr(token, expr) ->
         let value, environment = evaluate_expression expr environment
         let environment = Environment.assign environment token.lexeme value
@@ -25,15 +34,15 @@ let rec evaluate_expression expr environment =
     | Expression.LiteralExpr literal -> (literal, environment)
     | Expression.GroupingExpr expr -> evaluate_expression expr environment
     | Expression.UnaryExpr(operator, right) ->
-        let right, _ = evaluate_expression right environment in
+        let right, _ = evaluate_expression right environment
 
         match operator.token with
         | Token.Minus -> (minus_operator right, environment)
         | Token.Bang -> (bang_operator right, environment)
         | _ -> failwith "Not implemented"
     | Expression.BinaryExpr(left, operator, right) ->
-        let left, _ = evaluate_expression left environment in
-        let right, _ = evaluate_expression right environment in
+        let left, _ = evaluate_expression left environment
+        let right, _ = evaluate_expression right environment
 
         match (left, right) with
         | Token.NumberLiteral left, Token.NumberLiteral right ->
@@ -83,6 +92,13 @@ let evaluate_var_stmt name expr environment =
 
 let rec evaluate_stament statement environment =
     match statement with
+    | Statement.IfStatement(condition, then_branch, else_branch) ->
+        let condition, _ = evaluate_expression condition environment
+
+        if is_truthy condition then
+            evaluate_stament then_branch environment
+        else
+            evaluate_stament else_branch environment
     | Statement.Statement expr ->
         let _, environment = evaluate_expression expr environment
         environment
@@ -97,3 +113,14 @@ let rec evaluate_stament statement environment =
         match temp_env with
         | _ :: tail -> tail
         | [] -> failwith "Empty environment"
+    | Statement.WhileStatement(condition, body) ->
+        let rec loop env =
+            let condition, _ = evaluate_expression condition env
+
+            if is_truthy condition then
+                let env = evaluate_stament body env
+                loop env
+            else
+                env
+
+        loop environment

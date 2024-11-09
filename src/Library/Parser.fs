@@ -172,8 +172,36 @@ and equality state =
 
     local_match expr state
 
-and assignment state =
+and and_expression state =
     let expr, state = equality state
+
+    let rec local_match prev_expr state =
+        match match_token [ Token.And ] state with
+        | true, state ->
+            let operator = previous state
+            let right, state = equality state
+            let expr = Expression.LogicalExpr(prev_expr, operator, right)
+            local_match expr state
+        | false, state -> (prev_expr, state)
+
+    local_match expr state
+
+and or_expression state =
+    let expr, state = and_expression state
+
+    let rec local_match prev_expr state =
+        match match_token [ Token.Or ] state with
+        | true, state ->
+            let operator = previous state
+            let right, state = and_expression state
+            let expr = Expression.LogicalExpr(prev_expr, operator, right)
+            local_match expr state
+        | false, state -> (prev_expr, state)
+
+    local_match expr state
+
+and assignment state =
+    let expr, state = or_expression state
 
     match match_token [ Token.Equal ] state with
     | true, state ->
@@ -186,19 +214,93 @@ and assignment state =
 
 and expression state = assignment state
 
-let print_statement state =
-    let value, state = expression state
-    let _, state = consume Token.Semicolon state "Expected ; after value"
-    Statement.PrintStatement(value), state
+let rec statement state =
+    let _, next = state
 
-let expression_statement state =
-    let value, state = expression state
-    let _, state = consume Token.Semicolon state "Expected ; after value"
-    Statement.Statement(value), state
+    match Token.token_type (List.head next) with
+    | Token.Print -> print_statement state
+    | Token.LeftBrace -> block_statement state
+    | Token.If -> if_statement state
+    | Token.While -> while_statement state
+    | Token.For -> for_statement state
+    | _ -> expression_statement state
 
-let rec block_statement state =
+and for_statement state =
+    let _, state = consume Token.For state "Expected for statement"
+    let _, state = consume Token.LeftParen state "Expected '(' after for"
+
+    // Parse initializer
+    let _, next = state
+
+    let initializer, state =
+        match Token.token_type (List.head next) with
+        | Token.Semicolon ->
+            let _, state = consume Token.Semicolon state ""
+            None, state
+        | Token.Var ->
+            let _, state = consume Token.Var state ""
+            let expr, state = var_declaration state
+            Some(expr), state
+        | _ ->
+            let expr, state = expression_statement state
+            Some(expr), state
+
+
+    // Parse condition
+    let _, next = state
+
+    let condition, state =
+        match Token.token_type (List.head next) with
+        | Token.Semicolon ->
+            let _, state = consume Token.Semicolon state ""
+            Expression.LiteralExpr(Token.BoolLiteral true), state
+        | _ -> expression state
+
+    let _, state = consume Token.Semicolon state "Expected ';' after loop condition"
+
+    // Parse increment
+    let increment, state =
+        match Token.token_type (List.head next) with
+        | Token.RightParen -> None, state
+        | _ ->
+            let expr, state = expression state
+            Some(expr), state
+
+    let _, state = consume Token.RightParen state "Expected ')' after for clauses"
+
+    // Parse body
+    let body, state = statement state
+
+    // Transform for statement into while statement, check if there is increment first
+    let body =
+        match increment with
+        | Some(expr) -> Statement.BlockStatement([ body; Statement.Statement(expr) ])
+        | None -> body
+
+    // While statement with condition before body as usual
+    let body = Statement.WhileStatement(condition, body)
+
+    // If there is an initializer, run it before the while loop
+    let body =
+        match initializer with
+        | Some(expr) -> Statement.BlockStatement([ expr; body ])
+        | None -> body
+
+    body, state
+
+
+and while_statement state =
+    let _, state = consume Token.While state "Expected while statement"
+    let _, state = consume Token.LeftParen state "Expected '(' after while"
+    let condition, state = expression state
+    let _, state = consume Token.RightParen state "Expected ')' after while condition"
+    let body, state = statement state
+    Statement.WhileStatement(condition, body), state
+
+and block_statement state =
+    let _, state = consume Token.LeftBrace state "Expected '{' before block"
+
     let rec aux state acc =
-        let a, b = state
 
         if is_at_end state || check Token.RightBrace state then
             let _, state = consume Token.RightBrace state "Expected '}' after block"
@@ -208,20 +310,6 @@ let rec block_statement state =
             aux state (stmt :: acc)
 
     aux state []
-
-
-and statement state =
-    let is_print, state = match_token [ Token.Print ] state
-
-    if is_print then
-        print_statement state
-    else
-        let is_block, state = match_token [ Token.LeftBrace ] state
-
-        if is_block then
-            block_statement state
-        else
-            expression_statement state
 
 and var_declaration state =
     let token, state = consume Token.Indentifier state "Expected identifier after var"
@@ -242,7 +330,33 @@ and declaration state =
 
     if is_var then var_declaration state else statement state
 
+and if_statement state =
+    let _, state = consume Token.If state "Expected if statement"
+    let _, state = consume Token.LeftParen state "Expected '(' after if"
+    let condition, state = expression state
+    let _, state = consume Token.RightParen state "Expected ')' after if condition"
+    let then_branch, state = statement state
 
+    let has_else, state = match_token [ Token.Else ] state
+
+    if has_else then
+        let else_branch, state = statement state
+        Statement.IfStatement(condition, then_branch, else_branch), state
+    else
+        Statement.IfStatement(condition, then_branch, Statement.BlockStatement []), state
+
+
+
+and print_statement state =
+    let _, state = consume Token.Print state "Expected print statement"
+    let value, state = expression state
+    let _, state = consume Token.Semicolon state "Expected ; after value"
+    Statement.PrintStatement(value), state
+
+and expression_statement state =
+    let value, state = expression state
+    let _, state = consume Token.Semicolon state "Expected ; after value"
+    Statement.Statement(value), state
 
 let parse tokens =
     let rec aux acc state =
