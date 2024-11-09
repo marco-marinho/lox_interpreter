@@ -2,5 +2,9 @@
 
 [<EntryPoint>]
 let main args =
-    Repl.run_prompt [ Map.empty ]
+    if args.Length > 1 then
+        Repl.run_file args.[1] |> ignore
+    else
+        Repl.run_prompt [ Map.empty ]
+
     0

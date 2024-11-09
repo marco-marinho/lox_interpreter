@@ -103,7 +103,8 @@ let rec evaluate_stament statement environment =
         let _, environment = evaluate_expression expr environment
         environment
     | Statement.PrintStatement expr ->
-        printfn "%s" (string (evaluate_expression expr environment))
+        let res, environment = evaluate_expression expr environment
+        printfn "%s" (string res)
         environment
     | Statement.VarStatement(name, expr) -> evaluate_var_stmt name.lexeme expr environment
     | Statement.BlockStatement statements ->
