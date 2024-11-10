@@ -79,29 +79,48 @@ let synchronize state =
     aux state
 
 let rec primary state =
-    match Token.token_type (peek state) with
-    | Token.False ->
-        let state = drop_one state
-        (Expression.LiteralExpr(Token.BoolLiteral false), state)
-    | Token.True ->
-        let state = drop_one state
-        (Expression.LiteralExpr(Token.BoolLiteral true), state)
-    | Token.Nil ->
-        let state = drop_one state
-        (Expression.LiteralExpr Token.Null, state)
+    let head, state = advance state
+
+    match head.token with
+    | Token.False -> (Expression.LiteralExpr(Token.BoolLiteral false), state)
+    | Token.True -> (Expression.LiteralExpr(Token.BoolLiteral true), state)
+    | Token.Nil -> (Expression.LiteralExpr Token.Null, state)
     | Token.Number
-    | Token.String ->
-        let _, state = match_token [ Token.Number; Token.String ] state
-        (Expression.LiteralExpr(Token.token_literal (previous state)), state)
-    | Token.Indentifier ->
-        let state = drop_one state
-        (Expression.VariableExpr(previous state), state)
+    | Token.String -> (Expression.LiteralExpr(Token.token_literal (previous state)), state)
+    | Token.Indentifier -> (Expression.VariableExpr(previous state), state)
     | Token.LeftParen ->
-        let state = drop_one state
         let expr, state = expression state
         let _, state = consume Token.RightParen state "Expected ')' after expression"
         (expr, state)
     | _ -> failwith "Expected expression"
+
+and finish_call calle state =
+    let rec aux state acc =
+        match match_token [ Token.RightParen ] state with
+        | true, state -> (List.rev acc, state)
+        | false, state ->
+            let expr, state = expression state
+            let acc = expr :: acc
+
+            match match_token [ Token.Comma ] state with
+            | true, state -> aux state acc
+            | false, state -> (List.rev acc, state)
+
+    let arguments, state = aux state []
+    let paren, state = consume Token.RightParen state "Expected ')' after arguments"
+    Expression.Call(calle, paren, arguments), state
+
+and call state =
+    let expr, state = primary state
+
+    let rec aux state expr =
+        match match_token [ Token.LeftParen ] state with
+        | true, state ->
+            let state = drop_one state
+            finish_call expr state
+        | false, state -> (expr, state)
+
+    aux state expr
 
 and unary state =
     match match_token [ Token.Bang; Token.Minus ] state with
@@ -109,7 +128,7 @@ and unary state =
         let operator = previous state
         let right, state = unary state
         (Expression.UnaryExpr(operator, right), state)
-    | false, state -> primary state
+    | false, state -> call state
 
 and factor state =
     let expr, state = unary state
@@ -210,9 +229,7 @@ and assignment state =
 and expression state = assignment state
 
 let rec statement state =
-    let _, next = state
-
-    match Token.token_type (List.head next) with
+    match Token.token_type (peek state) with
     | Token.Print -> print_statement state
     | Token.LeftBrace -> block_statement state
     | Token.If -> if_statement state
@@ -225,10 +242,8 @@ and for_statement state =
     let _, state = consume Token.LeftParen state "Expected '(' after for"
 
     // Parse initializer
-    let _, next = state
-
     let initializer, state =
-        match Token.token_type (List.head next) with
+        match Token.token_type (peek state) with
         | Token.Semicolon ->
             let state = drop_one state
             None, state
@@ -242,10 +257,8 @@ and for_statement state =
 
 
     // Parse condition
-    let _, next = state
-
     let condition, state =
-        match Token.token_type (List.head next) with
+        match Token.token_type (peek state) with
         | Token.Semicolon ->
             let state = drop_one state
             Expression.LiteralExpr(Token.BoolLiteral true), state
@@ -255,7 +268,7 @@ and for_statement state =
 
     // Parse increment
     let increment, state =
-        match Token.token_type (List.head next) with
+        match Token.token_type (peek state) with
         | Token.RightParen -> None, state
         | _ ->
             let expr, state = expression state

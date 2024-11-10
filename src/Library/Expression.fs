@@ -8,6 +8,7 @@ type expression =
     | VariableExpr of Token.token
     | AsignExpr of Token.token * expression
     | LogicalExpr of expression * Token.token * expression
+    | Call of expression * Token.token * expression list
 
     override this.ToString() =
         match this with
@@ -20,3 +21,5 @@ type expression =
         | AsignExpr(token, expr) -> Printf.sprintf "Asignement(%s, %s)" (string token) (string expr)
         | LogicalExpr(left, operator, right) ->
             Printf.sprintf "Logical(%s, %s, %s)" (string left) (string operator) (string right)
+        | Call(callee, paren, arguments) ->
+            Printf.sprintf "Call(%s, %s, %A)" (string callee) (string paren) (string arguments)

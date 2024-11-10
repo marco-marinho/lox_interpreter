@@ -23,3 +23,14 @@ let rec get env key =
         match Map.tryFind key h with
         | Some value -> value
         | None -> get t key
+
+let call env key arguments =
+    let rec aux env =
+        match env with
+        | h :: t ->
+            match Map.tryFind key h with
+            | Some callable -> callable arguments
+            | None -> aux t
+        | [] -> failwith (sprintf "Undefined function '%s'" key)
+
+    env

@@ -17,6 +17,18 @@ let bang_operator =
 
 let rec evaluate_expression expr environment =
     match expr with
+    | Expression.Call(calle, _, arguments) ->
+        let callee, environment = evaluate_expression calle environment
+
+        let arguments, environment =
+            List.fold
+                (fun (acc, env) arg ->
+                    let arg, env = evaluate_expression arg env
+                    (arg :: acc, env))
+                ([], environment)
+                arguments
+
+        failwith "Not implemented"
     | Expression.LogicalExpr(left, operator, right) ->
         let left, environment = evaluate_expression left environment
 
