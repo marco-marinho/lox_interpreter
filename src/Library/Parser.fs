@@ -26,7 +26,12 @@ let advance state =
         | p, h :: t -> let next_state = (h :: p, t) in (previous next_state, next_state)
         | _ -> failwith "No more tokens to advance"
     else
+        failwith "No more tokens to advance"
         (previous state, state)
+
+let drop_one state =
+    let _, state = advance state
+    state
 
 let consume token_type state message =
     if check token_type state then
@@ -74,87 +79,77 @@ let synchronize state =
     aux state
 
 let rec primary state =
-    let flag, state = match_token [ Token.False ] state in
-
-    if flag then
+    match Token.token_type (peek state) with
+    | Token.False ->
+        let state = drop_one state
         (Expression.LiteralExpr(Token.BoolLiteral false), state)
-    else
-        let flag, state = match_token [ Token.True ] state in
-
-        if flag then
-            (Expression.LiteralExpr(Token.BoolLiteral true), state)
-        else
-            let flag, state = match_token [ Token.Nil ] state in
-
-            if flag then
-                (Expression.LiteralExpr Token.Null, state)
-            else
-                let flag, state = match_token [ Token.Number; Token.String ] state in
-
-                if flag then
-                    (Expression.LiteralExpr(Token.token_literal (previous state)), state)
-                else
-                    let flag, state = match_token [ Token.Indentifier ] state in
-
-                    if flag then
-                        (Expression.VariableExpr(previous state), state)
-                    else
-                        let flag, state = match_token [ Token.LeftParen ] state in
-
-                        if flag then
-                            let expr, state = expression state in
-                            let _, state = consume Token.RightParen state "Expected ')' after expression" in
-                            (expr, state)
-                        else
-                            failwith "Expected expression"
+    | Token.True ->
+        let state = drop_one state
+        (Expression.LiteralExpr(Token.BoolLiteral true), state)
+    | Token.Nil ->
+        let state = drop_one state
+        (Expression.LiteralExpr Token.Null, state)
+    | Token.Number
+    | Token.String ->
+        let _, state = match_token [ Token.Number; Token.String ] state
+        (Expression.LiteralExpr(Token.token_literal (previous state)), state)
+    | Token.Indentifier ->
+        let state = drop_one state
+        (Expression.VariableExpr(previous state), state)
+    | Token.LeftParen ->
+        let state = drop_one state
+        let expr, state = expression state
+        let _, state = consume Token.RightParen state "Expected ')' after expression"
+        (expr, state)
+    | _ -> failwith "Expected expression"
 
 and unary state =
     match match_token [ Token.Bang; Token.Minus ] state with
     | true, state ->
-        let operator = previous state in
-        let right, state = unary state in
+        let operator = previous state
+        let right, state = unary state
         (Expression.UnaryExpr(operator, right), state)
     | false, state -> primary state
 
 and factor state =
-    let expr, state = unary state in
+    let expr, state = unary state
 
     let rec local_match prev_expr state =
         match match_token [ Token.Slash; Token.Star ] state with
         | true, state ->
-            let operator = previous state in
-            let right, state = unary state in
-            let expr = Expression.BinaryExpr(prev_expr, operator, right) in
+            let operator = previous state
+            let right, state = unary state
+            let expr = Expression.BinaryExpr(prev_expr, operator, right)
             local_match expr state
-        | false, state -> (prev_expr, state) in
+        | false, state -> (prev_expr, state)
 
     local_match expr state
 
 and term state =
-    let expr, state = factor state in
+    let expr, state = factor state
 
     let rec local_match prev_expr state =
         match match_token [ Token.Minus; Token.Plus ] state with
         | true, state ->
-            let operator = previous state in
-            let right, state = factor state in
-            let expr = Expression.BinaryExpr(prev_expr, operator, right) in
+            let operator = previous state
+            let right, state = factor state
+            let expr = Expression.BinaryExpr(prev_expr, operator, right)
             local_match expr state
-        | false, state -> (prev_expr, state) in
+        | false, state -> (prev_expr, state)
 
     local_match expr state
 
 and comparison state =
-    let expr, state = term state in
+    let expr, state = term state
 
     let rec local_match prev_expr state =
         match match_token [ Token.Greater; Token.GreaterEqual; Token.Less; Token.LessEqual ] state with
         | true, state ->
-            let operator = previous state in
-            let right, state = term state in
-            let expr = Expression.BinaryExpr(prev_expr, operator, right) in
+            let operator = previous state
+            let right, state = term state
+            let expr = Expression.BinaryExpr(prev_expr, operator, right)
             local_match expr state
-        | false, state -> (prev_expr, state) in
+        | false, state -> (prev_expr, state)
 
     local_match expr state
 
@@ -226,7 +221,7 @@ let rec statement state =
     | _ -> expression_statement state
 
 and for_statement state =
-    let _, state = consume Token.For state "Expected for statement"
+    let state = drop_one state
     let _, state = consume Token.LeftParen state "Expected '(' after for"
 
     // Parse initializer
@@ -235,10 +230,10 @@ and for_statement state =
     let initializer, state =
         match Token.token_type (List.head next) with
         | Token.Semicolon ->
-            let _, state = consume Token.Semicolon state ""
+            let state = drop_one state
             None, state
         | Token.Var ->
-            let _, state = consume Token.Var state ""
+            let state = drop_one state
             let expr, state = var_declaration state
             Some(expr), state
         | _ ->
@@ -252,7 +247,7 @@ and for_statement state =
     let condition, state =
         match Token.token_type (List.head next) with
         | Token.Semicolon ->
-            let _, state = consume Token.Semicolon state ""
+            let state = drop_one state
             Expression.LiteralExpr(Token.BoolLiteral true), state
         | _ -> expression state
 
@@ -290,7 +285,7 @@ and for_statement state =
 
 
 and while_statement state =
-    let _, state = consume Token.While state "Expected while statement"
+    let state = drop_one state
     let _, state = consume Token.LeftParen state "Expected '(' after while"
     let condition, state = expression state
     let _, state = consume Token.RightParen state "Expected ')' after while condition"
@@ -298,10 +293,9 @@ and while_statement state =
     Statement.WhileStatement(condition, body), state
 
 and block_statement state =
-    let _, state = consume Token.LeftBrace state "Expected '{' before block"
+    let state = drop_one state
 
     let rec aux state acc =
-
         if is_at_end state || check Token.RightBrace state then
             let _, state = consume Token.RightBrace state "Expected '}' after block"
             (Statement.BlockStatement(List.rev acc), state)
@@ -331,7 +325,7 @@ and declaration state =
     if is_var then var_declaration state else statement state
 
 and if_statement state =
-    let _, state = consume Token.If state "Expected if statement"
+    let state = drop_one state
     let _, state = consume Token.LeftParen state "Expected '(' after if"
     let condition, state = expression state
     let _, state = consume Token.RightParen state "Expected ')' after if condition"
@@ -348,7 +342,7 @@ and if_statement state =
 
 
 and print_statement state =
-    let _, state = consume Token.Print state "Expected print statement"
+    let state = drop_one state
     let value, state = expression state
     let _, state = consume Token.Semicolon state "Expected ; after value"
     Statement.PrintStatement(value), state
