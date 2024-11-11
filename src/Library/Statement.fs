@@ -7,6 +7,7 @@ type statement =
     | BlockStatement of statement list
     | IfStatement of Expression.expression * statement * statement
     | WhileStatement of Expression.expression * statement
+    | FunctionStatement of Token.token * Token.token list * statement
 
     override this.ToString() =
         match this with
@@ -21,3 +22,5 @@ type statement =
                 (string then_branch)
                 (string else_branch)
         | WhileStatement(condition, body) -> sprintf "WhileStatement(%s, %s)" (string condition) (string body)
+        | FunctionStatement(name, parameters, body) ->
+            sprintf "FunctionStatement(%s, %s, %s)" (string name) (string parameters) (string body)

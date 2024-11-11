@@ -319,6 +319,7 @@ and block_statement state =
     aux state []
 
 and var_declaration state =
+    let state = drop_one state
     let token, state = consume Token.Indentifier state "Expected identifier after var"
     let has_value, state = match_token [ Token.Equal ] state
 
@@ -332,10 +333,36 @@ and var_declaration state =
     let _, state = consume Token.Semicolon state "Expected ; after var declaration"
     Statement.VarStatement(token, value), state
 
-and declaration state =
-    let is_var, state = match_token [ Token.Var ] state
+and fun_declaration state scope =
+    let state = drop_one state
+    let name, state = consume Token.Indentifier state (sprintf "Expected %s name" scope)
 
-    if is_var then var_declaration state else statement state
+    let _, state =
+        consume Token.LeftParen state (sprintf "Expected ( after %s name" scope)
+
+    let rec aux state acc =
+        match match_token [ Token.RightParen ] state with
+        | true, state -> (List.rev acc, state)
+        | false, state ->
+            let token, state = consume Token.Indentifier state "Expected parameter name"
+            let acc = token :: acc
+
+            match match_token [ Token.Comma ] state with
+            | _, state -> aux state acc
+
+    let parameters, state = aux state []
+
+    let _, state =
+        consume Token.LeftBrace state (sprintf "Expected { after %s parameters" scope)
+
+    let statements, state = block_statement state
+    Statement.FunctionStatement(name, parameters, statements), state
+
+and declaration state =
+    match Token.token_type (peek state) with
+    | Token.Var -> var_declaration state
+    | Token.Fun -> fun_declaration state "function"
+    | _ -> statement state
 
 and if_statement state =
     let state = drop_one state

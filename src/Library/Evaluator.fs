@@ -1,5 +1,7 @@
 module Lox.Evaluator
 
+
+
 let minus_operator =
     function
     | Token.NumberLiteral number -> Token.NumberLiteral(-number)
@@ -40,9 +42,9 @@ let rec evaluate_expression expr environment =
             evaluate_expression right environment
     | Expression.AsignExpr(token, expr) ->
         let value, environment = evaluate_expression expr environment
-        let environment = Environment.assign environment token.lexeme value
+        let environment = Environment.assign_var environment token.lexeme value
         (value, environment)
-    | Expression.VariableExpr token -> (Environment.get environment token.lexeme, environment)
+    | Expression.VariableExpr token -> (Environment.get_var environment token.lexeme, environment)
     | Expression.LiteralExpr literal -> (literal, environment)
     | Expression.GroupingExpr expr -> evaluate_expression expr environment
     | Expression.UnaryExpr(operator, right) ->
@@ -99,11 +101,14 @@ let rec evaluate_expression expr environment =
 
 let evaluate_var_stmt name expr environment =
     let value, environment = evaluate_expression expr environment
-    Environment.define environment name value
+    Environment.define_var environment name value
 
 
 let rec evaluate_stament statement environment =
     match statement with
+    | Statement.FunctionStatement(name, _, _) as fun_stmt ->
+        let environment = Environment.define_fun environment name.lexeme fun_stmt
+        environment
     | Statement.IfStatement(condition, then_branch, else_branch) ->
         let condition, _ = evaluate_expression condition environment
 
@@ -137,3 +142,21 @@ let rec evaluate_stament statement environment =
                 env
 
         loop environment
+
+let call environment name =
+    match Environment.get_fun environment name with
+    | Statement.FunctionStatement(_, parameters, body) ->
+        let values =
+            List.map (fun (token: Token.token) -> Environment.get_var environment token.lexeme) parameters
+
+        let zipped = List.map2 (fun param value -> (param, value)) parameters values
+
+        let push_args env =
+            List.fold (fun acc (param: Token.token, value) -> Environment.assign_var acc param.lexeme value) env zipped
+
+        let temp_env = Map.empty :: environment |> push_args |> evaluate_stament body
+
+        match temp_env with
+        | _ :: tail -> tail
+        | [] -> failwith "Empty environment"
+    | _ -> failwith "Not a function"
