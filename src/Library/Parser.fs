@@ -248,7 +248,6 @@ and for_statement state =
             let state = drop_one state
             None, state
         | Token.Var ->
-            let state = drop_one state
             let expr, state = var_declaration state
             Some(expr), state
         | _ ->

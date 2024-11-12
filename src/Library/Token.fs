@@ -114,3 +114,5 @@ let make_token token lexeme literal line =
 let token_type t = t.token
 
 let token_literal t = t.literal
+
+let token_lexeme t = t.lexeme

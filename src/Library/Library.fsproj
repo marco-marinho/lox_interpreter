@@ -10,8 +10,8 @@
     <Compile Include="Token.fs" />
     <Compile Include="Scanner.fs" />
     <Compile Include="Expression.fs" />
-    <Compile Include="Callable.fs" />
     <Compile Include="Statement.fs" />
+    <Compile Include="Callable.fs" />
     <Compile Include="Environment.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Evaluator.fs" />
