@@ -96,6 +96,8 @@ let rec primary state =
 
 and finish_call calle state =
     let rec aux state acc =
+        printfn "%s" (string (peek state))
+
         match match_token [ Token.RightParen ] state with
         | true, state -> (List.rev acc, state)
         | false, state ->
@@ -107,7 +109,7 @@ and finish_call calle state =
             | false, state -> (List.rev acc, state)
 
     let arguments, state = aux state []
-    let paren, state = consume Token.RightParen state "Expected ')' after arguments"
+    let paren = previous state
     Expression.Call(calle, paren, arguments), state
 
 and call state =
@@ -115,9 +117,7 @@ and call state =
 
     let rec aux state expr =
         match match_token [ Token.LeftParen ] state with
-        | true, state ->
-            let state = drop_one state
-            finish_call expr state
+        | true, state -> finish_call expr state
         | false, state -> (expr, state)
 
     aux state expr

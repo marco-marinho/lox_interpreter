@@ -16,6 +16,8 @@ while(i < 10){
     print i;
     i = i + 1;
 }
+rato();
+rato();
 print "print with for loop";
 for(var j = 0; j < 10; j = j + 1){
     print j;
