@@ -120,8 +120,8 @@ and evaluate_var_stmt name expr environment =
 
 and evaluate_stament statement environment =
     match statement with
-    | Statement.FunctionStatement(name, args, body) as fun_stmt ->
-        let func = Environment.Fun(Callable.Function(name.lexeme, args, fun_stmt))
+    | Statement.FunctionStatement(name, args, body) ->
+        let func = Environment.Fun(Callable.Function(name.lexeme, args, body))
         let environment = Environment.define environment name.lexeme func
         environment
     | Statement.IfStatement(condition, then_branch, else_branch) ->

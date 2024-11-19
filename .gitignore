@@ -2,3 +2,4 @@ _build/
 **/obj
 **/bin
 .fake
+.vscode

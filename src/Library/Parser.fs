@@ -96,7 +96,6 @@ let rec primary state =
 
 and finish_call calle state =
     let rec aux state acc =
-        printfn "%s" (string (peek state))
 
         match match_token [ Token.RightParen ] state with
         | true, state -> (List.rev acc, state)
@@ -105,8 +104,7 @@ and finish_call calle state =
             let acc = expr :: acc
 
             match match_token [ Token.Comma ] state with
-            | true, state -> aux state acc
-            | false, state -> (List.rev acc, state)
+            | _, state -> aux state acc
 
     let arguments, state = aux state []
     let paren = previous state
@@ -350,10 +348,6 @@ and fun_declaration state scope =
             | _, state -> aux state acc
 
     let parameters, state = aux state []
-
-    let _, state =
-        consume Token.LeftBrace state (sprintf "Expected { after %s parameters" scope)
-
     let statements, state = block_statement state
     Statement.FunctionStatement(name, parameters, statements), state
 
