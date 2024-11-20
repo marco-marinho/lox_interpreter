@@ -1,6 +1,6 @@
 module Lox.Evaluator
 
-
+exception ReturnException of Environment.value * Map<string, Environment.value> list
 
 let minus_operator =
     function
@@ -168,6 +168,9 @@ and evaluate_stament statement environment =
             | _ -> failwith "Invalid while condition"
 
         loop environment
+    | Statement.ReturnStatement(keyword, value) ->
+        let value, environment = evaluate_expression value environment
+        raise (ReturnException(value, environment))
 
 and call environment func arguments =
     match func with
@@ -179,8 +182,12 @@ and call environment func arguments =
                 parameters
                 arguments
 
-        let temp_env = evaluate_stament body environment
-        let ret = Environment.Value(Token.Null)
+        let ret, temp_env =
+            try
+                let temp_env = evaluate_stament body environment
+                Environment.Value(Token.Null), temp_env
+            with ReturnException(value, temp_env) ->
+                value, temp_env
 
         match temp_env with
         | _ :: tail -> ret, tail

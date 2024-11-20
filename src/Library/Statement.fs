@@ -8,6 +8,7 @@ type statement =
     | IfStatement of Expression.expression * statement * statement
     | WhileStatement of Expression.expression * statement
     | FunctionStatement of Token.token * Token.token list * statement
+    | ReturnStatement of Token.token * Expression.expression
 
     override this.ToString() =
         match this with
@@ -24,3 +25,4 @@ type statement =
         | WhileStatement(condition, body) -> sprintf "WhileStatement(%s, %s)" (string condition) (string body)
         | FunctionStatement(name, parameters, body) ->
             sprintf "FunctionStatement(%s, %s, %s)" (string name) (string parameters) (string body)
+        | ReturnStatement(keyword, value) -> sprintf "ReturnStatement(%s, %s)" (string keyword) (string value)

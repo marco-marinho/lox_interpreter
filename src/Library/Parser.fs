@@ -233,7 +233,20 @@ let rec statement state =
     | Token.If -> if_statement state
     | Token.While -> while_statement state
     | Token.For -> for_statement state
+    | Token.Return -> return_statement state
     | _ -> expression_statement state
+
+and return_statement state =
+    let token, state = consume Token.Return state "Expected return statement"
+
+    match Token.token_type (peek state) with
+    | Token.Semicolon ->
+        let _, state = advance state
+        Statement.ReturnStatement(token, Expression.LiteralExpr(Token.Null)), state
+    | _ ->
+        let value, state = expression state
+        let _, state = consume Token.Semicolon state "Expected ; after return value"
+        Statement.ReturnStatement(token, value), state
 
 and for_statement state =
     let state = drop_one state

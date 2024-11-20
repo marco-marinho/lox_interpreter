@@ -1,39 +1,7 @@
-fun rato(a){
-    print a;
+fun fib(n) {
+    if (n <= 1) return n;
+    return fib(n - 2) + fib(n - 1);
 }
-rato(3);
-rato("rato");
-var a = 1;
-var b = 2;
-print "a + b = 3";
-print a + b;
-{
-    var a = 3;
-    var b = 4;
-    print "a + b inside the block = 7";
-    print a + b;
+for (var i = 0; i < 20; i = i + 1) {
+    print fib(i);
 }
-print "reprint a + b outside block = 3";
-print a + b;
-var i = 0;
-print "print with while loop";
-while(i < 10){
-    print i;
-    i = i + 1;
-}
-print "print with for loop";
-for(var j = 0; j < 10; j = j + 1){
-    print j;
-}
-print "Fibonnaci of 7";
-var a = 0;
-var b = 1;
-var n = 0;
-while(n < 7 - 1){
-   var c = a + b; 
-   print b;
-   a = b;
-   b = c;
-   n = n + 1;
-}
-print b;
